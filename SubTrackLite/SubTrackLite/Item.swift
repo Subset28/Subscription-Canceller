@@ -1,0 +1,18 @@
+//
+//  Item.swift
+//  SubTrackLite
+//
+//  Created by Abbasaheb Yadav on 1/19/26.
+//
+
+import Foundation
+import SwiftData
+
+@Model
+final class Item {
+    var timestamp: Date
+    
+    init(timestamp: Date) {
+        self.timestamp = timestamp
+    }
+}
