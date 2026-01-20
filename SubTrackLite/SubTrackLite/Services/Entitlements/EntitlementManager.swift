@@ -13,7 +13,7 @@ import Combine
 
 @MainActor
 class EntitlementManager: ObservableObject {
-    @Published var hasPremiumAccess = true // V1: Always true, no paywall
+    @Published var hasPremiumAccess = false // Default to FALSE to test free tier
     @Published var products: [Product] = []
     
     private let productIDs = [
@@ -27,22 +27,25 @@ class EntitlementManager: ObservableObject {
     
     func loadProducts() async {
         // Stub for StoreKit 2 product loading
-        // In production: do {
-        //     products = try await Product.products(for: productIDs)
-        // } catch { ... }
     }
     
-    func purchase(_ product: Product) async throws {
-        // Stub for StoreKit 2 purchase flow
-        // In production: implement purchase logic
+    func purchase(_ productID: String) async {
+        // Mock purchase
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        hasPremiumAccess = true
     }
     
     func restorePurchases() async {
-        // Stub for restore purchases
+        // Mock restore
+        hasPremiumAccess = true
     }
     
-    // Feature gates (all unlocked in v1)
-    var canAddUnlimitedSubscriptions: Bool { hasPremiumAccess }
+    // Feature gates
+    func canAddSubscription(currentCount: Int) -> Bool {
+        if hasPremiumAccess { return true }
+        return currentCount < 3 // Strict limit of 3
+    }
+    
+    var canUseNotifications: Bool { hasPremiumAccess }
     var canExportData: Bool { hasPremiumAccess }
-    var canUseWidgets: Bool { hasPremiumAccess }
 }

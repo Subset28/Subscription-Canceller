@@ -16,6 +16,7 @@ struct SubscriptionListView: View {
     @State private var searchText = ""
     @State private var filterOption: FilterOption = .all
     @State private var showingAddSubscription = false
+    @State private var showingPaywall = false
     @State private var showingSettings = false
     
     // Computed filtering
@@ -72,7 +73,13 @@ struct SubscriptionListView: View {
                             .foregroundStyle(DesignSystem.Colors.textPrimary)
                     }
                     
-                    Button { showingAddSubscription = true } label: {
+                    Button {
+                        if container.entitlementManager.canAddSubscription(currentCount: allSubscriptions.count) {
+                            showingAddSubscription = true
+                        } else {
+                            showingPaywall = true
+                        }
+                    } label: {
                         Image(systemName: "plus")
                             .fontWeight(.semibold)
                             .foregroundStyle(DesignSystem.Colors.textPrimary)
@@ -84,6 +91,9 @@ struct SubscriptionListView: View {
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
             }
             .searchable(text: $searchText, prompt: "Search ledger")
         }
@@ -103,7 +113,7 @@ struct SubscriptionListView: View {
                 
                 // List of Cards
                 LazyVStack(spacing: DesignSystem.Layout.spacingM) {
-                    ForEach(filteredSubscriptions) { subscription in
+                    ForEach(Array(filteredSubscriptions.enumerated()), id: \.element.id) { index, subscription in
                         // Card Interaction
                         ZStack {
                             NavigationLink(destination: SubscriptionDetailView(subscription: subscription)) {
@@ -121,6 +131,12 @@ struct SubscriptionListView: View {
                                 }
                         }
                         .padding(.horizontal, DesignSystem.Layout.spacingM) // Screen margins
+                        
+                        // Inject Ad after 2nd item (index 1)
+                        if index == 1 && !container.entitlementManager.hasPremiumAccess {
+                            NativeAdCard(adManager: container.adManager)
+                                .padding(.horizontal, DesignSystem.Layout.spacingM)
+                        }
                     }
                 }
                 

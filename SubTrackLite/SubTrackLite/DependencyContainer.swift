@@ -17,6 +17,7 @@ class DependencyContainer: ObservableObject {
     let currencyFormatter: CurrencyFormatter
     let csvExportService: CSVExportService
     let entitlementManager: EntitlementManager
+    let adManager: AdManager
     
     init() {
         // Initialize SwiftData model container
@@ -33,5 +34,6 @@ class DependencyContainer: ObservableObject {
         currencyFormatter = CurrencyFormatter()
         csvExportService = CSVExportService()
         entitlementManager = EntitlementManager()
+        adManager = AdManager()
     }
 }

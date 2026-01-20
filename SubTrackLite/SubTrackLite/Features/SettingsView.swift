@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     @State private var showingDebugView = false
+    @State private var showingPaywall = false
     @State private var exportFileURL: URL?
     
     var body: some View {
@@ -29,30 +30,46 @@ struct SettingsView: View {
                     HStack {
                         Text("Status")
                         Spacer()
-                        Text(notificationStatusText)
-                            .foregroundStyle(notificationStatusColor)
+                        if container.entitlementManager.canUseNotifications {
+                            Text(notificationStatusText)
+                                .foregroundStyle(notificationStatusColor)
+                        } else {
+                            Text("Locked")
+                                .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            Image(systemName: "lock.fill")
+                                .font(.caption)
+                                .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        }
                     }
-                    
-                    if container.notificationScheduler.authorizationStatus != .authorized {
-                        Button("Open Settings") {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
-                            }
+                    .contentShape(Rectangle()) // Make entire row tappable
+                    .onTapGesture {
+                        if !container.entitlementManager.canUseNotifications {
+                            showingPaywall = true
                         }
                     }
                     
-                    Picker("Default Reminder", selection: $defaultReminderDays) {
-                        Text("1 day before").tag(1)
-                        Text("3 days before").tag(3)
-                        Text("7 days before").tag(7)
-                        Text("14 days before").tag(14)
+                    if container.entitlementManager.canUseNotifications {
+                        if container.notificationScheduler.authorizationStatus != .authorized {
+                            Button("Open Settings") {
+                                if let url = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(url)
+                                }
+                            }
+                        }
+                        
+                        Picker("Default Reminder", selection: $defaultReminderDays) {
+                            Text("1 day before").tag(1)
+                            Text("3 days before").tag(3)
+                            Text("7 days before").tag(7)
+                            Text("14 days before").tag(14)
+                        }
                     }
                 } header: {
                     Text("Notifications")
                         .font(DesignSystem.Typography.headline())
                         .foregroundStyle(DesignSystem.Colors.textPrimary)
                 } footer: {
-                    Text("Choose the default reminder timing for new subscriptions.")
+                    Text(container.entitlementManager.canUseNotifications ? "Choose the default reminder timing for new subscriptions." : "Upgrade to unlock renewal notifications.")
                         .foregroundStyle(DesignSystem.Colors.textTertiary)
                 }
                 .listRowBackground(DesignSystem.Colors.cardBackground)
@@ -60,9 +77,20 @@ struct SettingsView: View {
                 // Data Management Section
                 Section {
                     Button {
-                        exportData()
+                        if container.entitlementManager.canExportData {
+                            exportData()
+                        } else {
+                            showingPaywall = true
+                        }
                     } label: {
-                        Label("Export CSV", systemImage: "square.and.arrow.up")
+                        HStack {
+                            Label("Export CSV", systemImage: "square.and.arrow.up")
+                            Spacer()
+                            if !container.entitlementManager.canExportData {
+                                Image(systemName: "lock.fill")
+                                    .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            }
+                        }
                     }
                     .disabled(allSubscriptions.isEmpty)
                     
@@ -76,7 +104,7 @@ struct SettingsView: View {
                         .font(DesignSystem.Typography.headline())
                         .foregroundStyle(DesignSystem.Colors.textPrimary)
                 } footer: {
-                    Text("Export your subscription data to CSV or import from a previous export.")
+                    Text(container.entitlementManager.canExportData ? "Export your subscription data to CSV or import from a previous export." : "Upgrade to export your data.")
                         .foregroundStyle(DesignSystem.Colors.textTertiary)
                 }
                 .listRowBackground(DesignSystem.Colors.cardBackground)
@@ -123,6 +151,9 @@ struct SettingsView: View {
                 if let url = exportFileURL {
                     ShareSheet(items: [url])
                 }
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
             }
             .sheet(isPresented: $showingDebugView) {
                 NotificationDebugView()
@@ -190,7 +221,7 @@ struct PrivacyView: View {
                     Text("Your Privacy Matters")
                         .font(.headline)
                     
-                    Text("SubTrack Lite is designed with your privacy in mind:")
+                    Text("Unsub is designed with your privacy in mind:")
                         .font(.subheadline)
                     
                     VStack(alignment: .leading, spacing: 8) {
