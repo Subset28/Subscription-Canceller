@@ -26,6 +26,8 @@ struct PaywallView: View {
                 HStack {
                     Spacer()
                     Button {
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
@@ -49,12 +51,12 @@ struct PaywallView: View {
                                 .foregroundStyle(DesignSystem.Colors.textPrimary)
                                 .shadow(color: DesignSystem.Colors.textPrimary.opacity(0.2), radius: 20, x: 0, y: 10)
                             
-                            Text("Unsub\nPremium")
+                            Text("Unlock Full\nPotential")
                                 .font(DesignSystem.Typography.editorialLarge())
                                 .multilineTextAlignment(.center)
                                 .foregroundStyle(DesignSystem.Colors.textPrimary)
                             
-                            Text("Stop the leaks. Protect your wallet.\nUnlock the ultimate financial bodyguard.")
+                            Text("Automatic protection against surprise charges.\nPeace of mind, guaranteed.")
                                 .font(DesignSystem.Typography.body())
                                 .multilineTextAlignment(.center)
                                 .foregroundStyle(DesignSystem.Colors.textSecondary)
@@ -65,9 +67,11 @@ struct PaywallView: View {
                         
                         // 3. Value Props (The "Feature Gating")
                         VStack(alignment: .leading, spacing: DesignSystem.Layout.spacingM) {
-                            FeatureRow(icon: "infinity", title: "Unlimited Subscriptions", subtitle: "Track everything, no limits.")
-                            FeatureRow(icon: "bell.badge.fill", title: "Guardian Notifications", subtitle: "Get alerted before you pay.")
-                            FeatureRow(icon: "arrow.down.doc.fill", title: "Data Export", subtitle: "Your data is yours. CSV ready.")
+                            FeatureRow(icon: "lock.shield.fill", title: "100% Private (No Bank Linking)", subtitle: "We don't sell your data. We protect it.")
+                            FeatureRow(icon: "chart.pie.fill", title: "Spending DNA Insights", subtitle: "Visualize where your money goes.")
+                            FeatureRow(icon: "calendar", title: "Forecasting Calendar", subtitle: "See exactly when bills are due.")
+                            FeatureRow(icon: "infinity", title: "Unlimited Subscriptions", subtitle: "Break the 5-subscription limit.")
+                            FeatureRow(icon: "dollarsign.circle", title: "Save $300/year vs Competitors", subtitle: "Concierge service without the premium price.")
                         }
                         .padding(.horizontal, DesignSystem.Layout.spacingL)
                         .padding(.vertical, DesignSystem.Layout.spacingM)
@@ -102,6 +106,8 @@ struct PaywallView: View {
                             VStack(spacing: DesignSystem.Layout.spacingM) {
                                 ForEach(container.entitlementManager.products) { product in
                                     Button {
+                                        let generator = UIImpactFeedbackGenerator(style: .medium)
+                                        generator.impactOccurred()
                                         purchase(product: product)
                                     } label: {
                                         PricingButtonContent(

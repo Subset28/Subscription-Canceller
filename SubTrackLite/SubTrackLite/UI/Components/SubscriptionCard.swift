@@ -63,6 +63,7 @@ struct SubscriptionCard: View {
             .padding(.top, 2) // Optical alignment with icon
         }
         .padding(DesignSystem.Layout.spacingL) // Generous internal padding
+        .contentShape(Rectangle()) // Hit Test fix: Makes entire card tappable, not just text
         .styleCard()
     }
     

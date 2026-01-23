@@ -19,10 +19,18 @@ final class Subscription {
     var reminderLeadTimeDays: Int
     var remindersEnabled: Bool
     var isAppleSubscription: Bool
-    var cancelURL: String? // Store as String, convert to URL when needed
+    var cancelURL: String?
     var notes: String?
     var createdAt: Date
     var updatedAt: Date
+    
+    // Organization (New)
+    var categoryRaw: String = "Personal"
+    
+    var category: SubscriptionCategory {
+        get { SubscriptionCategory(rawValue: categoryRaw) ?? .personal }
+        set { categoryRaw = newValue.rawValue }
+    }
     
     init(
         id: UUID = UUID(),
@@ -31,6 +39,7 @@ final class Subscription {
         currencyCode: String = Locale.current.currency?.identifier ?? "USD",
         billingPeriod: BillingPeriod,
         nextRenewalDate: Date,
+        category: SubscriptionCategory = .personal,
         reminderLeadTimeDays: Int = 3,
         remindersEnabled: Bool = true,
         isAppleSubscription: Bool = false,
@@ -43,6 +52,7 @@ final class Subscription {
         self.currencyCode = currencyCode
         self.billingPeriod = billingPeriod
         self.nextRenewalDate = nextRenewalDate
+        self.categoryRaw = category.rawValue
         self.reminderLeadTimeDays = reminderLeadTimeDays
         self.remindersEnabled = remindersEnabled
         self.isAppleSubscription = isAppleSubscription
@@ -52,7 +62,8 @@ final class Subscription {
         self.updatedAt = Date()
     }
     
-    // Computed properties
+    // MARK: - Computed Properties
+    
     var notificationIdentifier: String {
         "subscription-\(id.uuidString)"
     }
@@ -67,9 +78,28 @@ final class Subscription {
     }
 }
 
-// MARK: - Billing Period (Moved to BillingPeriod.swift)
+// MARK: - Enums
 
-// MARK: - Subscription Extensions
+enum SubscriptionCategory: String, Codable, CaseIterable, Sendable {
+    case personal = "Personal"
+    case business = "Business"
+    case entertainment = "Entertainment"
+    case utilities = "Utilities"
+    case trials = "Trials"
+    
+    var icon: String {
+        switch self {
+        case .personal: return "person.fill"
+        case .business: return "briefcase.fill"
+        case .entertainment: return "tv.fill"
+        case .utilities: return "bolt.fill"
+        case .trials: return "clock.arrow.circlepath"
+        }
+    }
+}
+
+// MARK: - Extensions
+
 extension Subscription {
     // Calculate next N renewal dates
     func upcomingRenewalDates(count: Int = 3) -> [Date] {

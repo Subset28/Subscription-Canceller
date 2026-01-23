@@ -66,7 +66,7 @@ class AdManager: NSObject, ObservableObject {
         #if canImport(GoogleMobileAds)
         let request = Request()
         RewardedAd.load(with: rewardedAdUnitID, request: request) { [weak self] ad, error in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 if let error = error {
                     print("AdMob: Failed to load rewarded ad: \(error.localizedDescription)")
                     return

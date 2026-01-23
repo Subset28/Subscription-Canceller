@@ -24,21 +24,21 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "1.99",
+          "displayPrice" : "4.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "6449373160",
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "Unlock unlimited subscriptions and alerts.",
-              "displayName" : "Weekly Pass",
+              "description" : "Monthly financial protection.",
+              "displayName" : "Monthly Shield",
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.subtrack.lite.premium.weekly",
-          "recurringSubscriptionPeriod" : "P1W",
-          "referenceName" : "Weekly Pass",
+          "productID" : "com.subtrack.lite.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Monthly Shield",
           "subscriptionGroupID" : "21345678",
           "type" : "RecurringSubscription"
         },

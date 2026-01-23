@@ -18,8 +18,10 @@ class EntitlementManager: ObservableObject {
     @Published var products: [Product] = []
     
     // Product IDs must match App Store Connect / Unsub.storekit
+    // Product IDs must match App Store Connect / Unsub.storekit
+    // User Pivot: Weekly removed. Monthly & Yearly only.
     private let productIDs = [
-        "com.subtrack.lite.premium.weekly",
+        "com.subtrack.lite.premium.monthly",
         "com.subtrack.lite.premium.yearly"
     ]
     
@@ -123,17 +125,22 @@ class EntitlementManager: ObservableObject {
     
     func canAddSubscription(currentCount: Int) -> Bool {
         if hasPremiumAccess { return true }
-        // Free Limit = 3 + Earned Slot Rewards
-        return currentCount < (3 + earnedExtraSlots)
+        // Free Limit = 5 + Earned Slot Rewards
+        return currentCount < (5 + earnedExtraSlots)
     }
     
+    // Rewarded Ad integration
     func rewardUserWithSlot() {
         earnedExtraSlots += 1
         AnalyticsService.shared.log(.nativeAdImpression, params: ["type": "rewarded_slot_earned"])
-        // Also log a custom event for "Slot Earned"
     }
     
-    var canUseNotifications: Bool { hasPremiumAccess }
+    // Notifications are core (Free for the 5 allowed subs)
+    var canUseNotifications: Bool { true }
+    
+    // Premium Only Features
+    var isCalendarUnlocked: Bool { hasPremiumAccess }
+    var isCategoryUnlocked: Bool { hasPremiumAccess }
     var canExportData: Bool { hasPremiumAccess }
 }
 

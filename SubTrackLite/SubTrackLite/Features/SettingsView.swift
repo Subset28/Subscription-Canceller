@@ -26,50 +26,35 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 // Notifications Section
+                // Notifications Section
                 Section {
                     HStack {
                         Text("Status")
                         Spacer()
-                        if container.entitlementManager.canUseNotifications {
-                            Text(notificationStatusText)
-                                .foregroundStyle(notificationStatusColor)
-                        } else {
-                            Text("Locked")
-                                .foregroundStyle(DesignSystem.Colors.textTertiary)
-                            Image(systemName: "lock.fill")
-                                .font(.caption)
-                                .foregroundStyle(DesignSystem.Colors.textTertiary)
-                        }
+                        Text(notificationStatusText)
+                            .foregroundStyle(notificationStatusColor)
                     }
-                    .contentShape(Rectangle()) // Make entire row tappable
-                    .onTapGesture {
-                        if !container.entitlementManager.canUseNotifications {
-                            showingPaywall = true
+                    
+                    if container.notificationScheduler.authorizationStatus != .authorized {
+                        Button("Open Settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
                         }
                     }
                     
-                    if container.entitlementManager.canUseNotifications {
-                        if container.notificationScheduler.authorizationStatus != .authorized {
-                            Button("Open Settings") {
-                                if let url = URL(string: UIApplication.openSettingsURLString) {
-                                    UIApplication.shared.open(url)
-                                }
-                            }
-                        }
-                        
-                        Picker("Default Reminder", selection: $defaultReminderDays) {
-                            Text("1 day before").tag(1)
-                            Text("3 days before").tag(3)
-                            Text("7 days before").tag(7)
-                            Text("14 days before").tag(14)
-                        }
+                    Picker("Default Reminder", selection: $defaultReminderDays) {
+                        Text("1 day before").tag(1)
+                        Text("3 days before").tag(3)
+                        Text("7 days before").tag(7)
+                        Text("14 days before").tag(14)
                     }
                 } header: {
                     Text("Notifications")
                         .font(DesignSystem.Typography.headline())
                         .foregroundStyle(DesignSystem.Colors.textPrimary)
                 } footer: {
-                    Text(container.entitlementManager.canUseNotifications ? "Choose the default reminder timing for new subscriptions." : "Upgrade to unlock renewal notifications.")
+                    Text("Choose the default reminder timing for new subscriptions.")
                         .foregroundStyle(DesignSystem.Colors.textTertiary)
                 }
                 .listRowBackground(DesignSystem.Colors.cardBackground)
@@ -219,22 +204,57 @@ struct PrivacyView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Your Privacy Matters")
+                    Text("Privacy Report")
                         .font(DesignSystem.Typography.headline())
                         .foregroundStyle(DesignSystem.Colors.textPrimary)
                     
-                    Text("Unsub is designed with your privacy in mind:")
+                    Text("SubTrackLite runs 100% on-device. No data leaves your phone.")
                         .font(DesignSystem.Typography.subheadline())
                         .foregroundStyle(DesignSystem.Colors.textSecondary)
                     
-                    VStack(alignment: .leading, spacing: 8) {
-                        PrivacyPoint(text: "No account required")
-                        PrivacyPoint(text: "No data collection or tracking")
-                        PrivacyPoint(text: "All data stored locally on your device")
-                        PrivacyPoint(text: "No internet connection required")
-                        PrivacyPoint(text: "No third-party analytics or SDKs")
+                    Divider()
+                    
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("Stored Locally")
+                                .font(.caption)
+                                .textCase(.uppercase)
+                                .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            Text("All Subscriptions")
+                                .font(.headline)
+                        }
+                        Spacer()
+                        Image(systemName: "iphone.gen3")
+                            .foregroundStyle(DesignSystem.Colors.tint)
                     }
-                    .padding(.top, 8)
+                    
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("Bank Connections")
+                                .font(.caption)
+                                .textCase(.uppercase)
+                                .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            Text("0 (None)")
+                                .font(.headline)
+                        }
+                        Spacer()
+                        Image(systemName: "xmark.shield.fill")
+                            .foregroundStyle(DesignSystem.Colors.success)
+                    }
+                    
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("Data Sold")
+                                .font(.caption)
+                                .textCase(.uppercase)
+                                .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            Text("Never")
+                                .font(.headline)
+                        }
+                        Spacer()
+                        Image(systemName: "hand.raised.fill")
+                            .foregroundStyle(DesignSystem.Colors.success)
+                    }
                 }
                 .padding(.vertical, 8)
             }

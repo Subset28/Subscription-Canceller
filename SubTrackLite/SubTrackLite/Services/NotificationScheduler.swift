@@ -70,8 +70,13 @@ class NotificationScheduler: ObservableObject {
         }
         
         let content = UNMutableNotificationContent()
-        content.title = "Subscription Renewal"
-        content.body = "\(subscription.name) renews in \(subscription.reminderLeadTimeDays) day\(subscription.reminderLeadTimeDays == 1 ? "" : "s")"
+        content.title = "Upcoming Renewal"
+        
+        if subscription.reminderLeadTimeDays == 1 {
+             content.body = "\(subscription.name) renews tomorrow."
+        } else {
+             content.body = "\(subscription.name) renews in \(subscription.reminderLeadTimeDays) days."
+        }
         content.sound = .default
         content.categoryIdentifier = "SUBSCRIPTION_REMINDER"
         

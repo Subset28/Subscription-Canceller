@@ -19,6 +19,7 @@ struct EditSubscriptionView: View {
     @State private var price = ""
     @State private var billingPeriod: BillingPeriod = .monthly
     @State private var nextRenewalDate = Date()
+    @State private var category: SubscriptionCategory = .personal
     @State private var reminderLeadTimeDays = 3
     @State private var remindersEnabled = true
     @State private var isAppleSubscription = false
@@ -27,6 +28,7 @@ struct EditSubscriptionView: View {
     
     @State private var showingValidationAlert = false
     @State private var validationMessage = ""
+    @State private var showingPaywall = false
     
     private var isEditing: Bool { subscription != nil }
     private var title: String { isEditing ? "Edit Subscription" : "Add Subscription" }
@@ -37,6 +39,11 @@ struct EditSubscriptionView: View {
                 Section {
                     TextField("Name", text: $name)
                         .autocorrectionDisabled()
+                        .onChange(of: name) { oldValue, newValue in
+                            if let foundURL = ServiceCatalog.getCancelURL(for: newValue), cancelURL.isEmpty {
+                                cancelURL = foundURL
+                            }
+                        }
                     
                     HStack {
                         Text(Locale.current.currency?.identifier ?? "USD")
@@ -46,6 +53,35 @@ struct EditSubscriptionView: View {
                     }
                 } header: {
                     Text("Basic Information")
+                }
+                
+                Section {
+                    HStack {
+                        Picker("Category", selection: $category) {
+                            ForEach(SubscriptionCategory.allCases, id: \.self) { cat in
+                                Label(cat.rawValue, systemImage: cat.icon).tag(cat)
+                            }
+                        }
+                        .disabled(!container.entitlementManager.isCategoryUnlocked)
+                        
+                        if !container.entitlementManager.isCategoryUnlocked {
+                            Button {
+                                showingPaywall = true
+                            } label: {
+                                Image(systemName: "lock.fill")
+                                    .foregroundStyle(DesignSystem.Colors.tint)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                } header: {
+                    Text("Organization")
+                } footer: {
+                    if !container.entitlementManager.isCategoryUnlocked {
+                        Text("Upgrade to Premium to create custom categories.")
+                            .font(.caption)
+                            .foregroundStyle(DesignSystem.Colors.tint)
+                    }
                 }
                 
                 Section {
@@ -87,11 +123,19 @@ struct EditSubscriptionView: View {
                 Section {
                     Toggle("Apple Subscription", isOn: $isAppleSubscription)
                     
-                    if !isAppleSubscription {
                         TextField("Cancellation URL (optional)", text: $cancelURL)
                             .keyboardType(.URL)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
+                        
+                        // Email Concierge Link
+                        NavigationLink {
+                            EmailConciergeView(serviceName: name.isEmpty ? "Service Provider" : name)
+                        } label: {
+                            Label("Draft Cancellation Email", systemImage: "envelope")
+                                .font(.caption)
+                                .foregroundStyle(DesignSystem.Colors.tint)
+                        }
                     }
                     
                     TextField("Notes (optional)", text: $notes, axis: .vertical)
@@ -150,6 +194,9 @@ struct EditSubscriptionView: View {
             .onAppear {
                 loadSubscriptionData()
             }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
+            }
         }
     }
     
@@ -160,6 +207,7 @@ struct EditSubscriptionView: View {
         price = "\(subscription.price)"
         billingPeriod = subscription.billingPeriod
         nextRenewalDate = subscription.nextRenewalDate
+        category = subscription.category
         reminderLeadTimeDays = subscription.reminderLeadTimeDays
         remindersEnabled = subscription.remindersEnabled
         isAppleSubscription = subscription.isAppleSubscription
@@ -188,18 +236,19 @@ struct EditSubscriptionView: View {
             return
         }
         
-        // Auto-adjust past renewal dates
-        let adjustedRenewalDate: Date
-        if nextRenewalDate < Date() {
-            // Move to next valid cycle
-            var testDate = nextRenewalDate
-            while testDate < Date() {
-                testDate = billingPeriod.nextRenewalDate(from: testDate)
-            }
-            adjustedRenewalDate = testDate
-        } else {
-            adjustedRenewalDate = nextRenewalDate
+        // Enforce Future Dates (Strict Mode)
+        // User Requirement: "Enforce future-only renewal dates (no past dates allowed)"
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        let startOfSelected = calendar.startOfDay(for: nextRenewalDate)
+        
+        if startOfSelected < startOfToday {
+            validationMessage = "Renewal date must be in the future. Please check your bill."
+            showingValidationAlert = true
+            return
         }
+        
+        let adjustedRenewalDate = nextRenewalDate
         
         if isEditing, let existingSubscription = subscription {
             // Update existing
@@ -207,6 +256,7 @@ struct EditSubscriptionView: View {
             existingSubscription.price = priceDecimal
             existingSubscription.billingPeriod = billingPeriod
             existingSubscription.nextRenewalDate = adjustedRenewalDate
+            existingSubscription.category = category
             existingSubscription.reminderLeadTimeDays = reminderLeadTimeDays
             existingSubscription.remindersEnabled = remindersEnabled
             existingSubscription.isAppleSubscription = isAppleSubscription
@@ -222,6 +272,7 @@ struct EditSubscriptionView: View {
                 price: priceDecimal,
                 billingPeriod: billingPeriod,
                 nextRenewalDate: adjustedRenewalDate,
+                category: category,
                 reminderLeadTimeDays: reminderLeadTimeDays,
                 remindersEnabled: remindersEnabled,
                 isAppleSubscription: isAppleSubscription,
@@ -236,4 +287,4 @@ struct EditSubscriptionView: View {
         try? modelContext.save()
         dismiss()
     }
-}
+
