@@ -25,6 +25,7 @@ struct EditSubscriptionView: View {
     @State private var isAppleSubscription = false
     @State private var cancelURL = ""
     @State private var notes = ""
+    @State private var syncToCalendar = false // Calendar Sync State
     
     @State private var showingValidationAlert = false
     @State private var validationMessage = ""
@@ -64,24 +65,10 @@ struct EditSubscriptionView: View {
                         }
                         .disabled(!container.entitlementManager.isCategoryUnlocked)
                         
-                        if !container.entitlementManager.isCategoryUnlocked {
-                            Button {
-                                showingPaywall = true
-                            } label: {
-                                Image(systemName: "lock.fill")
-                                    .foregroundStyle(DesignSystem.Colors.tint)
-                            }
-                            .buttonStyle(.plain)
-                        }
+                        Spacer()
                     }
                 } header: {
                     Text("Organization")
-                } footer: {
-                    if !container.entitlementManager.isCategoryUnlocked {
-                        Text("Upgrade to Premium to create custom categories.")
-                            .font(.caption)
-                            .foregroundStyle(DesignSystem.Colors.tint)
-                    }
                 }
                 
                 Section {
@@ -107,8 +94,13 @@ struct EditSubscriptionView: View {
                         Picker("Remind Me", selection: $reminderLeadTimeDays) {
                             Text("1 day before").tag(1)
                             Text("3 days before").tag(3)
-                            Text("7 days before").tag(7)
-                            Text("14 days before").tag(14)
+                            
+                            if container.entitlementManager.isSmartRemindersUnlocked {
+                                Text("7 days before").tag(7)
+                                Text("14 days before").tag(14)
+                            } else {
+                                Text("7 days before (Premium)").tag(7).foregroundStyle(.secondary)
+                            }
                         }
                     }
                 } header: {
@@ -123,21 +115,64 @@ struct EditSubscriptionView: View {
                 Section {
                     Toggle("Apple Subscription", isOn: $isAppleSubscription)
                     
+                    // Calendar Sync (Premium)
+                    if container.entitlementManager.canSyncToCalendar {
+                        Toggle("Sync to Apple Calendar", isOn: $syncToCalendar)
+                            .onChange(of: syncToCalendar) {
+                                if syncToCalendar {
+                                    // Request Access Immediately
+                                    Task {
+                                        let granted = await container.calendarService.requestAccess()
+                                        if !granted {
+                                            syncToCalendar = false
+                                        }
+                                    }
+                                }
+                            }
+                    } else {
+                        Button {
+                            showingPaywall = true
+                        } label: {
+                            HStack {
+                                Text("Sync to Apple Calendar")
+                                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                                Spacer()
+                                Image(systemName: "lock.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(DesignSystem.Colors.tint)
+                            }
+                        }
+                    }
+                    
                         TextField("Cancellation URL (optional)", text: $cancelURL)
                             .keyboardType(.URL)
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
                         
-                        // Email Concierge Link
-                        NavigationLink {
-                            EmailConciergeView(serviceName: name.isEmpty ? "Service Provider" : name)
-                        } label: {
-                            Label("Draft Cancellation Email", systemImage: "envelope")
-                                .font(.caption)
-                                .foregroundStyle(DesignSystem.Colors.tint)
+                        // Email Concierge Link (Premium Only)
+                        if container.entitlementManager.isConciergeUnlocked {
+                            NavigationLink {
+                                EmailConciergeView(serviceName: name.isEmpty ? "Service Provider" : name)
+                            } label: {
+                                Label("Draft Cancellation Email", systemImage: "envelope")
+                                    .font(.caption)
+                                    .foregroundStyle(DesignSystem.Colors.tint)
+                            }
+                        } else {
+                            Button {
+                                showingPaywall = true
+                            } label: {
+                                HStack {
+                                    Label("Draft Cancellation Email", systemImage: "envelope")
+                                        .font(.caption)
+                                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                    Spacer()
+                                    Image(systemName: "lock.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(DesignSystem.Colors.tint)
+                                }
+                            }
                         }
-                    }
-                    
                     TextField("Notes (optional)", text: $notes, axis: .vertical)
                         .lineLimit(3...6)
                 } header: {
@@ -182,7 +217,7 @@ struct EditSubscriptionView: View {
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        saveSubscription()
+                        Task { await saveSubscription() }
                     }
                 }
             }
@@ -213,9 +248,10 @@ struct EditSubscriptionView: View {
         isAppleSubscription = subscription.isAppleSubscription
         cancelURL = subscription.cancelURL ?? ""
         notes = subscription.notes ?? ""
+        syncToCalendar = subscription.calendarEventID != nil
     }
     
-    private func saveSubscription() {
+    private func saveSubscription() async {
         // Validate
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
             validationMessage = "Please enter a name for the subscription."
@@ -237,7 +273,6 @@ struct EditSubscriptionView: View {
         }
         
         // Enforce Future Dates (Strict Mode)
-        // User Requirement: "Enforce future-only renewal dates (no past dates allowed)"
         let calendar = Calendar.current
         let startOfToday = calendar.startOfDay(for: Date())
         let startOfSelected = calendar.startOfDay(for: nextRenewalDate)
@@ -249,7 +284,9 @@ struct EditSubscriptionView: View {
         }
         
         let adjustedRenewalDate = nextRenewalDate
+        var subscriptionToProcess: Subscription!
         
+        // 1. Perform SwiftData Operations (Main Actor)
         if isEditing, let existingSubscription = subscription {
             // Update existing
             existingSubscription.name = name.trimmingCharacters(in: .whitespaces)
@@ -264,7 +301,9 @@ struct EditSubscriptionView: View {
             existingSubscription.notes = notes.isEmpty ? nil : notes
             existingSubscription.updateRenewalDate()
             
-            container.notificationScheduler.updateNotification(for: existingSubscription)
+            // Handle Calendar Sync (Update or Remove logic later)
+            // We just update the model here.
+            subscriptionToProcess = existingSubscription
         } else {
             // Create new
             let newSubscription = Subscription(
@@ -277,14 +316,55 @@ struct EditSubscriptionView: View {
                 remindersEnabled: remindersEnabled,
                 isAppleSubscription: isAppleSubscription,
                 cancelURL: cancelURL.isEmpty ? nil : cancelURL,
+                calendarEventID: nil, // Will be set after insertion if sync is on
                 notes: notes.isEmpty ? nil : notes
             )
             
             modelContext.insert(newSubscription)
-            container.notificationScheduler.scheduleNotification(for: newSubscription)
+            subscriptionToProcess = newSubscription
         }
         
-        try? modelContext.save()
+        // 2. Save Context (Main Actor)
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to save context: \(error)")
+            // If save fails, we shouldn't proceed with services
+            return
+        }
+        
+        // 3. Create DTO (Thread Safe Snapshot)
+        // MUST be done after save so ID is permanent and state is consistent
+        var dto = SubscriptionDTO(from: subscriptionToProcess)
+        
+        // 4. Perform Service Operations (Async / Background Safe)
+        
+        // Calendar Sync
+        if syncToCalendar {
+            if let id = await container.calendarService.addOrUpdateEvent(for: dto) {
+                // Update model with new ID
+                subscriptionToProcess.calendarEventID = id
+                // Update DTO if needed for further steps, though ID is just for local storage usually
+            }
+        } else if let eventID = subscriptionToProcess.calendarEventID {
+             // User turned OFF sync, remove event
+             await container.calendarService.removeEvent(identifier: eventID)
+             subscriptionToProcess.calendarEventID = nil
+        }
+        
+        // Save again if calendar ID changed
+        if subscriptionToProcess.hasChanges {
+             try? modelContext.save()
+             // Refresh DTO
+             dto = SubscriptionDTO(from: subscriptionToProcess)
+        }
+
+        // Notifications & Spotlight (Use DTO)
+        // NotificationScheduler is MainActor but using DTO is safer against implicit property access faults
+        container.notificationScheduler.updateNotification(for: dto)
+        container.spotlightService.index(dto)
+        
         dismiss()
     }
+}
 

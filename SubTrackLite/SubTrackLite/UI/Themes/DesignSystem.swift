@@ -12,6 +12,7 @@ struct DesignSystem {
     
     // MARK: - Colors
     // MARK: - Colors
+    // MARK: - Colors
     struct Colors {
         // Helper for Light/Dark mode support
         private static func adaptiveColor(light: Color, dark: Color) -> Color {
@@ -20,61 +21,70 @@ struct DesignSystem {
             })
         }
         
-        // Primary Brand: Deep Slate (Light) / Soft Indigo (Dark)
+        // Primary Brand: Deep Slate (Light) / Electric Indigo (Dark)
         static let primary = adaptiveColor(
             light: Color(red: 0.25, green: 0.25, blue: 0.35),
-            dark: Color(red: 0.36, green: 0.36, blue: 0.90) // Soft Indigo
+            dark: Color(red: 0.45, green: 0.45, blue: 1.0) // More vibrant Electric Indigo
         )
         
-        // Background: Paper (Light) / Deep Charcoal (Dark)
+        // Background: Paper (Light) / True Black (Dark Premium)
+        // Dark mode: #000000 (OLED Black) for maximum contrast and battery
         static let background = adaptiveColor(
             light: Color(red: 0.98, green: 0.98, blue: 0.976),
-            dark: Color(red: 0.07, green: 0.07, blue: 0.07) // Almost Black #121212
+            dark: Color.black // Pure black feels more premium/modern
         )
         
-        // Cards: White (Light) / Elevated Grey (Dark)
+        // Cards: White (Light) / Dark Gray Surface (Dark)
+        // Dark mode: #1C1C1E (Standard iOS Dark Gray for depth)
         static let cardBackground = adaptiveColor(
             light: Color.white,
-            dark: Color(red: 0.11, green: 0.11, blue: 0.118) // #1E1E1E
+            dark: Color(UIColor.secondarySystemBackground) // Native dark gray
+        )
+        
+        // Border: Transparent (Light) / Subtle White Line (Dark)
+        // Used to define edges in dark mode where shadows fall off
+        static let border = adaptiveColor(
+            light: Color.clear,
+            dark: Color.white.opacity(0.1)
         )
         
         // Text: Soft Charcoal (Light) / Off-White (Dark)
         static let textPrimary = adaptiveColor(
             light: Color(red: 0.1, green: 0.1, blue: 0.12),
-            dark: Color(red: 0.95, green: 0.95, blue: 0.97)
+            dark: Color(red: 0.96, green: 0.96, blue: 0.98)
         )
         
         // Secondary Text
         static let textSecondary = adaptiveColor(
             light: Color(red: 0.4, green: 0.4, blue: 0.45),
-            dark: Color(red: 0.68, green: 0.68, blue: 0.7)
+            dark: Color(red: 0.65, green: 0.65, blue: 0.75) // Cool grey
         )
         
         // Tertiary Text
         static let textTertiary = adaptiveColor(
             light: Color(red: 0.6, green: 0.6, blue: 0.65),
-            dark: Color(red: 0.4, green: 0.4, blue: 0.45)
+            dark: Color(red: 0.45, green: 0.45, blue: 0.55)
         )
         
         // Semantic
         static let tint = adaptiveColor(
             light: Color(red: 0.35, green: 0.4, blue: 0.9),
-            dark: Color(red: 0.4, green: 0.5, blue: 1.0) // Brighter Blue
+            dark: Color(red: 0.45, green: 0.55, blue: 1.0)
         )
         
         static let success = adaptiveColor(
             light: Color(red: 0.25, green: 0.5, blue: 0.35),
-            dark: Color(red: 0.4, green: 0.8, blue: 0.5) // Brighter Green
+            dark: Color(red: 0.4, green: 0.85, blue: 0.55) // Vibrant Mint
         )
         
         static let warning = adaptiveColor(
             light: Color(red: 0.85, green: 0.55, blue: 0.25),
-            dark: Color(red: 1.0, green: 0.7, blue: 0.3) // Brighter Amber
+            dark: Color(red: 1.0, green: 0.75, blue: 0.35) // Warm Amber
         )
         
         static let critical = adaptiveColor(
             light: Color(red: 0.8, green: 0.3, blue: 0.3),
-            dark: Color(red: 1.0, green: 0.4, blue: 0.4) // Brighter Red
+            dark: Color(red: 1.0, green: 0.45, blue: 0.45) // Soft Red
         )
     }
     
@@ -89,6 +99,10 @@ struct DesignSystem {
         
         static func editorialTitle() -> Font {
             .system(size: 24, weight: .semibold, design: .serif)
+        }
+        
+        static func landingTitle() -> Font {
+            .system(size: 48, weight: .heavy, design: .rounded)
         }
         
         // Technical/Functional: Sans-Serif (SF Pro / Rounded)
@@ -183,6 +197,10 @@ extension View {
     func styleCard() -> some View {
         self.background(DesignSystem.Colors.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Layout.cornerRadiusM))
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.Layout.cornerRadiusM)
+                    .strokeBorder(DesignSystem.Colors.border, lineWidth: 1)
+            )
             .modifier(DesignSystem.Shadows.soft())
     }
 }

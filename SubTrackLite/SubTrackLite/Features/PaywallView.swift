@@ -56,7 +56,7 @@ struct PaywallView: View {
                                 .multilineTextAlignment(.center)
                                 .foregroundStyle(DesignSystem.Colors.textPrimary)
                             
-                            Text("Automatic protection against surprise charges.\nPeace of mind, guaranteed.")
+                            Text("Automated alerts against surprise charges.\nPeace of mind, guaranteed.")
                                 .font(DesignSystem.Typography.body())
                                 .multilineTextAlignment(.center)
                                 .foregroundStyle(DesignSystem.Colors.textSecondary)
@@ -69,9 +69,9 @@ struct PaywallView: View {
                         VStack(alignment: .leading, spacing: DesignSystem.Layout.spacingM) {
                             FeatureRow(icon: "lock.shield.fill", title: "100% Private (No Bank Linking)", subtitle: "We don't sell your data. We protect it.")
                             FeatureRow(icon: "chart.pie.fill", title: "Spending DNA Insights", subtitle: "Visualize where your money goes.")
-                            FeatureRow(icon: "calendar", title: "Forecasting Calendar", subtitle: "See exactly when bills are due.")
+                            FeatureRow(icon: "calendar.badge.plus", title: "Apple Calendar Sync", subtitle: "See exactly when bills are due.")
                             FeatureRow(icon: "infinity", title: "Unlimited Subscriptions", subtitle: "Break the 5-subscription limit.")
-                            FeatureRow(icon: "dollarsign.circle", title: "Save $300/year vs Competitors", subtitle: "Concierge service without the premium price.")
+                            FeatureRow(icon: "dollarsign.circle", title: "Save $300/year vs Competitors", subtitle: "Automated tools without the premium price.")
                         }
                         .padding(.horizontal, DesignSystem.Layout.spacingL)
                         .padding(.vertical, DesignSystem.Layout.spacingM)
@@ -83,27 +83,9 @@ struct PaywallView: View {
                         .padding(.horizontal, DesignSystem.Layout.spacingM)
                         
                         // 4. Pricing Options
-                        if container.entitlementManager.products.isEmpty {
-                            VStack(spacing: 16) {
-                                ProgressView()
-                                    .padding()
-                                
-                                Button("Retry Loading") {
-                                    Task { await container.entitlementManager.loadProducts() }
-                                }
-                                .font(DesignSystem.Typography.subheadline())
-                                .foregroundStyle(DesignSystem.Colors.tint)
-                                
-                                Text("If this persists, check Xcode:\nProduct > Scheme > Edit Scheme > Options\nEnsure StoreKit Configuration is 'Unsub'")
-                                    .font(DesignSystem.Typography.caption())
-                                    .multilineTextAlignment(.center)
-                                    .foregroundStyle(DesignSystem.Colors.textTertiary)
-                                    .padding(.top, 8)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                        } else {
-                            VStack(spacing: DesignSystem.Layout.spacingM) {
+                        if !container.entitlementManager.products.isEmpty {
+                            // Products Loaded Successfully
+                             VStack(spacing: DesignSystem.Layout.spacingM) {
                                 ForEach(container.entitlementManager.products) { product in
                                     Button {
                                         let generator = UIImpactFeedbackGenerator(style: .medium)
@@ -149,6 +131,42 @@ struct PaywallView: View {
                             }
                             .padding(.horizontal, DesignSystem.Layout.spacingM)
                             .padding(.bottom, DesignSystem.Layout.spacingXL)
+                        } else if container.entitlementManager.isLoadingProducts {
+                            // Loading State
+                            VStack(spacing: 16) {
+                                ProgressView()
+                                    .padding()
+                                Text("Securing connection...")
+                                    .font(DesignSystem.Typography.caption())
+                                    .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                        } else {
+                            // Error / Empty State
+                            VStack(spacing: 16) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .font(.system(size: 32))
+                                    .foregroundStyle(.orange)
+                                
+                                Text("Store Unavailable")
+                                    .font(DesignSystem.Typography.headline())
+                                
+                                Text(container.entitlementManager.productLoadError ?? "Could not reach the App Store.")
+                                    .font(DesignSystem.Typography.caption())
+                                    .multilineTextAlignment(.center)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                    .padding(.horizontal)
+                                
+                                Button("Retry") {
+                                    Task { await container.entitlementManager.loadProducts() }
+                                }
+                                .font(DesignSystem.Typography.subheadline())
+                                .foregroundStyle(DesignSystem.Colors.tint)
+                                .padding(.top, 8)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
                         }
                     }
                 }

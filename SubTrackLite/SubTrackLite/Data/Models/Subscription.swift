@@ -20,6 +20,7 @@ final class Subscription {
     var remindersEnabled: Bool
     var isAppleSubscription: Bool
     var cancelURL: String?
+    var calendarEventID: String? // New for Calendar Sync
     var notes: String?
     var createdAt: Date
     var updatedAt: Date
@@ -44,6 +45,7 @@ final class Subscription {
         remindersEnabled: Bool = true,
         isAppleSubscription: Bool = false,
         cancelURL: String? = nil,
+        calendarEventID: String? = nil,
         notes: String? = nil
     ) {
         self.id = id
@@ -57,6 +59,7 @@ final class Subscription {
         self.remindersEnabled = remindersEnabled
         self.isAppleSubscription = isAppleSubscription
         self.cancelURL = cancelURL
+        self.calendarEventID = calendarEventID
         self.notes = notes
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -136,5 +139,13 @@ extension Subscription {
     // Check if renewal is within N days
     func isRenewingWithin(days: Int) -> Bool {
         return daysUntilRenewal <= days && daysUntilRenewal >= 0
+    }
+    
+    // Formatted Price for Spotlight/Search
+    var formattedPrice: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = currencyCode
+        return formatter.string(from: price as NSNumber) ?? "\(price)"
     }
 }

@@ -18,6 +18,8 @@ class DependencyContainer: ObservableObject {
     let csvExportService: CSVExportService
     let entitlementManager: EntitlementManager
     let adManager: AdManager
+    let calendarService: CalendarService
+    let spotlightService: SpotlightService
     
     init() {
         // Initialize SwiftData model container
@@ -35,5 +37,7 @@ class DependencyContainer: ObservableObject {
         csvExportService = CSVExportService()
         entitlementManager = EntitlementManager()
         adManager = AdManager()
+        calendarService = CalendarService()
+        spotlightService = SpotlightService.shared
     }
 }

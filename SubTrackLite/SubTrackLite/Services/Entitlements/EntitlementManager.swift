@@ -16,6 +16,8 @@ class EntitlementManager: ObservableObject {
     @AppStorage("earnedExtraSlots") var earnedExtraSlots = 0
     @Published var hasPremiumAccess = false
     @Published var products: [Product] = []
+    @Published var isLoadingProducts = false
+    @Published var productLoadError: String?
     
     // Product IDs must match App Store Connect / Unsub.storekit
     // Product IDs must match App Store Connect / Unsub.storekit
@@ -45,12 +47,28 @@ class EntitlementManager: ObservableObject {
     // MARK: - StoreKit Logic
     
     func loadProducts() async {
+        guard !isLoadingProducts else { return }
+        
+        await MainActor.run {
+            isLoadingProducts = true
+            productLoadError = nil
+        }
+        
         do {
-            self.products = try await Product.products(for: productIDs)
-            // Sort by price (Weekly first)
-            self.products.sort { $0.price < $1.price }
+            let fetchedProducts = try await Product.products(for: productIDs)
+            
+            await MainActor.run {
+                self.products = fetchedProducts
+                // Sort by price (Weekly first)
+                self.products.sort { $0.price < $1.price }
+                self.isLoadingProducts = false
+            }
         } catch {
             print("StoreKit: Failed to load products: \(error)")
+            await MainActor.run {
+                self.productLoadError = error.localizedDescription
+                self.isLoadingProducts = false
+            }
         }
     }
     
@@ -125,8 +143,8 @@ class EntitlementManager: ObservableObject {
     
     func canAddSubscription(currentCount: Int) -> Bool {
         if hasPremiumAccess { return true }
-        // Free Limit = 5 + Earned Slot Rewards
-        return currentCount < (5 + earnedExtraSlots)
+        // Free Limit = 3 (Aggressive Pivot) + Earned Slot Rewards
+        return currentCount < (3 + earnedExtraSlots)
     }
     
     // Rewarded Ad integration
@@ -135,12 +153,20 @@ class EntitlementManager: ObservableObject {
         AnalyticsService.shared.log(.nativeAdImpression, params: ["type": "rewarded_slot_earned"])
     }
     
-    // Notifications are core (Free for the 5 allowed subs)
-    var canUseNotifications: Bool { true }
+    // Notifications are Premium Only (Aggressive Pivot)
+    var canUseNotifications: Bool { hasPremiumAccess }
     
-    // Premium Only Features
+    // Calendar View is Premium Only (Aggressive Pivot)
     var isCalendarUnlocked: Bool { hasPremiumAccess }
-    var isCategoryUnlocked: Bool { hasPremiumAccess }
-    var canExportData: Bool { hasPremiumAccess }
+    
+    // GATED: The "Pro" stuff
+    var canSyncToCalendar: Bool { hasPremiumAccess } // Adding to Apple Calendar is PREMIUM
+    
+    // GATED: The "Pro" stuff
+    var isCategoryUnlocked: Bool { true } // Ungated: Core Organization feature
+    var canExportData: Bool { hasPremiumAccess } // Data sovereignty
+    var isChartsUnlocked: Bool { hasPremiumAccess } // Spending DNA
+    var isConciergeUnlocked: Bool { hasPremiumAccess } // Legal Email Generator
+    var isSmartRemindersUnlocked: Bool { hasPremiumAccess } // > 3 day reminders
 }
 

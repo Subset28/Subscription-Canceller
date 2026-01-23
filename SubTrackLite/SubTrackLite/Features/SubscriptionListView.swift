@@ -74,6 +74,21 @@ struct SubscriptionListView: View {
                         Image(systemName: "slider.horizontal.3")
                             .foregroundStyle(DesignSystem.Colors.textPrimary)
                     }
+                    
+                    // Insights (Premium)
+                    Button {
+                        if container.entitlementManager.isChartsUnlocked {
+                            showingInsights = true
+                        } else {
+                            // Locked -> Paywall
+                            let generator = UINotificationFeedbackGenerator()
+                            generator.notificationOccurred(.warning)
+                            showingPaywall = true
+                        }
+                    } label: {
+                        Image(systemName: "chart.pie")
+                            .foregroundStyle(container.entitlementManager.isChartsUnlocked ? DesignSystem.Colors.textPrimary : DesignSystem.Colors.textSecondary)
+                    }
                 }
                 
                 // Trailing: Add + Filter Menu
@@ -138,9 +153,17 @@ struct SubscriptionListView: View {
             .sheet(isPresented: $showingPaywall) {
                 PaywallView()
             }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
+            }
+            .navigationDestination(isPresented: $showingInsights) {
+                InsightsView()
+            }
             .searchable(text: $searchText, prompt: "Search ledger")
         }
     }
+    
+    @State private var showingInsights = false
     
     private var mainContent: some View {
         List {
@@ -204,7 +227,10 @@ struct SubscriptionListView: View {
     }
     
     private func deleteSubscription(_ subscription: Subscription) {
-        container.notificationScheduler.cancelNotification(for: subscription)
+        // Create DTO first to pass to services safely
+        let dto = SubscriptionDTO(from: subscription)
+        container.notificationScheduler.cancelNotification(for: dto)
+        container.spotlightService.deindex(dto)
         modelContext.delete(subscription)
         try? modelContext.save()
     }

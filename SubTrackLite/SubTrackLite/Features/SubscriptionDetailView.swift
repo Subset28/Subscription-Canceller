@@ -172,6 +172,7 @@ struct SubscriptionDetailView: View {
     
     private func deleteSubscription() {
         container.notificationScheduler.cancelNotification(for: subscription)
+        container.spotlightService.deindex(subscription)
         modelContext.delete(subscription)
         try? modelContext.save()
         dismiss()

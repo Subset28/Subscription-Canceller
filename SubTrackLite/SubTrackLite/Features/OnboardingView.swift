@@ -26,7 +26,7 @@ struct OnboardingView: View {
             // Page 2: Control
             OnboardingPage(
                 title: "Quiet\nControl.",
-                description: "Get notified before you pay. Cancel unwanted subscriptions with zero stress.",
+                description: "Get notified before you pay. Tools to help you cancel unwanted subscriptions with zero stress.",
                 icon: "shield.fill",
                 isLastPage: true,
                 action: {

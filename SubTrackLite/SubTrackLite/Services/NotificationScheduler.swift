@@ -42,7 +42,8 @@ class NotificationScheduler: ObservableObject {
     }
     
     // MARK: - Scheduling
-    func scheduleNotification(for subscription: Subscription) {
+    // MARK: - Scheduling
+    func scheduleNotification(for subscription: SubscriptionDTO) {
         guard subscription.remindersEnabled else {
             cancelNotification(for: subscription)
             return
@@ -99,12 +100,12 @@ class NotificationScheduler: ObservableObject {
         }
     }
     
-    func cancelNotification(for subscription: Subscription) {
+    func cancelNotification(for subscription: SubscriptionDTO) {
         notificationCenter.removePendingNotificationRequests(withIdentifiers: [subscription.notificationIdentifier])
         print("Cancelled notification for \(subscription.name)")
     }
     
-    func updateNotification(for subscription: Subscription) {
+    func updateNotification(for subscription: SubscriptionDTO) {
         cancelNotification(for: subscription)
         scheduleNotification(for: subscription)
     }

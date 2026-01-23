@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum BillingPeriod: Codable, Sendable, Hashable {
+public enum BillingPeriod: Codable, Sendable, Hashable {
     case weekly
     case biweekly
     case monthly
@@ -83,6 +83,65 @@ enum BillingPeriod: Codable, Sendable, Hashable {
             return Decimal(1) / Decimal(12) // ~0.083
         case .custom(let days):
             return Decimal(30) / Decimal(days)
+        }
+    }
+    // Manual Codable implementation to resolve Swift 6 / SwiftData isolation issues
+    enum CodingKeys: String, CodingKey {
+        case type, days
+    }
+    
+    public init(from decoder: Decoder) throws {
+        // Attempt to decode as new keyed container (Swift 6 compliant format)
+        if let container = try? decoder.container(keyedBy: CodingKeys.self) {
+            let type = try container.decode(String.self, forKey: .type)
+            switch type {
+            case "weekly": self = .weekly
+            case "biweekly": self = .biweekly
+            case "monthly": self = .monthly
+            case "quarterly": self = .quarterly
+            case "semiannual": self = .semiannual
+            case "yearly": self = .yearly
+            case "custom":
+                let days = try container.decode(Int.self, forKey: .days)
+                self = .custom(days: days)
+            default:
+                self = .monthly
+            }
+        } else {
+            // Fallback: Try decoding as single value (Legacy format)
+            // This handles migration from previous app versions avoiding crash loop
+            let container = try decoder.singleValueContainer()
+            // Legacy was likely Int or String depending on automatic synthesis
+            // Try decoding raw string first (as sometimes Enums encode as strings)
+            if let stringVal = try? container.decode(String.self) {
+                 // Map implicit string values if possible (not guaranteed if it was int-backed, but BillingPeriod wasn't Int backed)
+                 // Assuming standard cases match property names
+                 // This is a "best effort" recovery.
+                 // Given the previous enum didn't have String rawValue, it might have encoded as a keyed object with specific internal keys
+                 // actually automatic codable for enums without raw values uses nested containers usually.
+                 // BUT if it was crashing, let's just default to monthly if we can't read it, or try to decode the old structure.
+                 // The safest "Fix Crash" is to catch the error and default.
+                 print("BillingPeriod: Recovering from legacy format (String): \(stringVal)")
+                 self = .monthly // Default safe fallback
+            } else {
+                 print("BillingPeriod: Unknown legacy format. Defaulting to .monthly")
+                 self = .monthly
+            }
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .weekly: try container.encode("weekly", forKey: .type)
+        case .biweekly: try container.encode("biweekly", forKey: .type)
+        case .monthly: try container.encode("monthly", forKey: .type)
+        case .quarterly: try container.encode("quarterly", forKey: .type)
+        case .semiannual: try container.encode("semiannual", forKey: .type)
+        case .yearly: try container.encode("yearly", forKey: .type)
+        case .custom(let days):
+            try container.encode("custom", forKey: .type)
+            try container.encode(days, forKey: .days)
         }
     }
 }

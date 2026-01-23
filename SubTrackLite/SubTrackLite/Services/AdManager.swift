@@ -16,31 +16,22 @@ class AdManager: NSObject, ObservableObject {
     @Published var nativeAd: Any? // Store as Any to avoid build errors without SDK
     @Published var isAdLoaded = false
     
-    // Test Unit ID for Native Advanced
-    // In production, use: ca-app-pub-8981618797106308/2449373160
-    #if DEBUG
-    let adUnitID = "ca-app-pub-3940256099942544/3986624511" // Test ID
-    #else
-    let adUnitID = "ca-app-pub-8981618797106308/2449373160" // Production ID
-    #endif
+    // Production Unit ID for Native Advanced
+    let adUnitID = "ca-app-pub-8981618797106308/2449373160"
     
     #if canImport(GoogleMobileAds)
     private var adLoader: AdLoader?
     private var rewardedAd: RewardedAd?
     #endif
     
-    // Rewarded Ad Unit ID
-    // In production: ca-app-pub-8981618797106308/8356112440
-    #if DEBUG
-    let rewardedAdUnitID = "ca-app-pub-3940256099942544/1712485313" // Test ID
-    #else
-    let rewardedAdUnitID = "ca-app-pub-8981618797106308/8356112440" // Production ID
-    #endif
+    // Production Rewarded Ad Unit ID
+    let rewardedAdUnitID = "ca-app-pub-8981618797106308/8356112440"
     
     override init() {
         super.init()
         #if canImport(GoogleMobileAds)
-        MobileAds.shared.requestConfiguration.testDeviceIdentifiers = [ "08bda9bb8a98e5d6921659b958700cc6" ]
+        // Production: No test devices
+        // MobileAds.shared.requestConfiguration.testDeviceIdentifiers = []
         #endif
         loadAd()
         loadRewardedAd()
