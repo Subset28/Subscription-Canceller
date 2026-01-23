@@ -181,6 +181,13 @@ struct EditSubscriptionView: View {
             return
         }
         
+        // Prevent illogical reminders (e.g. 7 day reminder for Weekly)
+        if billingPeriod == .weekly && reminderLeadTimeDays >= 7 {
+            validationMessage = "For weekly subscriptions, the reminder must be less than 7 days."
+            showingValidationAlert = true
+            return
+        }
+        
         // Auto-adjust past renewal dates
         let adjustedRenewalDate: Date
         if nextRenewalDate < Date() {

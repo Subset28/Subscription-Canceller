@@ -11,27 +11,71 @@ import SwiftUI
 struct DesignSystem {
     
     // MARK: - Colors
+    // MARK: - Colors
     struct Colors {
-        // Primary Brand: A deep, muted indigo that feels intelligent, not techy.
-        static let primary = Color(red: 0.25, green: 0.25, blue: 0.35) // Deep Slate
+        // Helper for Light/Dark mode support
+        private static func adaptiveColor(light: Color, dark: Color) -> Color {
+            Color(UIColor { traitCollection in
+                return traitCollection.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
+            })
+        }
         
-        // Background: "Paper" / "Stone". Warm, inviting, non-digital.
-        // #FAFAF9 -> RGB(250, 250, 249)
-        static let background = Color(red: 0.98, green: 0.98, blue: 0.976)
+        // Primary Brand: Deep Slate (Light) / Soft Indigo (Dark)
+        static let primary = adaptiveColor(
+            light: Color(red: 0.25, green: 0.25, blue: 0.35),
+            dark: Color(red: 0.36, green: 0.36, blue: 0.90) // Soft Indigo
+        )
         
-        // Cards: Pure white to pop against the warm background.
-        static let cardBackground = Color.white
+        // Background: Paper (Light) / Deep Charcoal (Dark)
+        static let background = adaptiveColor(
+            light: Color(red: 0.98, green: 0.98, blue: 0.976),
+            dark: Color(red: 0.07, green: 0.07, blue: 0.07) // Almost Black #121212
+        )
         
-        // Text: Never pure black.
-        static let textPrimary = Color(red: 0.1, green: 0.1, blue: 0.12) // Soft Charcoal
-        static let textSecondary = Color(red: 0.4, green: 0.4, blue: 0.45) // Muted Grey
-        static let textTertiary = Color(red: 0.6, green: 0.6, blue: 0.65) // Light Grey
+        // Cards: White (Light) / Elevated Grey (Dark)
+        static let cardBackground = adaptiveColor(
+            light: Color.white,
+            dark: Color(red: 0.11, green: 0.11, blue: 0.118) // #1E1E1E
+        )
+        
+        // Text: Soft Charcoal (Light) / Off-White (Dark)
+        static let textPrimary = adaptiveColor(
+            light: Color(red: 0.1, green: 0.1, blue: 0.12),
+            dark: Color(red: 0.95, green: 0.95, blue: 0.97)
+        )
+        
+        // Secondary Text
+        static let textSecondary = adaptiveColor(
+            light: Color(red: 0.4, green: 0.4, blue: 0.45),
+            dark: Color(red: 0.68, green: 0.68, blue: 0.7)
+        )
+        
+        // Tertiary Text
+        static let textTertiary = adaptiveColor(
+            light: Color(red: 0.6, green: 0.6, blue: 0.65),
+            dark: Color(red: 0.4, green: 0.4, blue: 0.45)
+        )
         
         // Semantic
-        static let tint = Color(red: 0.35, green: 0.4, blue: 0.9) // Soft Royal Blue
-        static let success = Color(red: 0.25, green: 0.5, blue: 0.35) // Sage Green
-        static let warning = Color(red: 0.85, green: 0.55, blue: 0.25) // Muted Amber
-        static let critical = Color(red: 0.8, green: 0.3, blue: 0.3) // Brick Red
+        static let tint = adaptiveColor(
+            light: Color(red: 0.35, green: 0.4, blue: 0.9),
+            dark: Color(red: 0.4, green: 0.5, blue: 1.0) // Brighter Blue
+        )
+        
+        static let success = adaptiveColor(
+            light: Color(red: 0.25, green: 0.5, blue: 0.35),
+            dark: Color(red: 0.4, green: 0.8, blue: 0.5) // Brighter Green
+        )
+        
+        static let warning = adaptiveColor(
+            light: Color(red: 0.85, green: 0.55, blue: 0.25),
+            dark: Color(red: 1.0, green: 0.7, blue: 0.3) // Brighter Amber
+        )
+        
+        static let critical = adaptiveColor(
+            light: Color(red: 0.8, green: 0.3, blue: 0.3),
+            dark: Color(red: 1.0, green: 0.4, blue: 0.4) // Brighter Red
+        )
     }
     
     // MARK: - Typography
@@ -112,7 +156,7 @@ struct ShadowModifier: ViewModifier {
 extension View {
     func stylePrimaryButton() -> some View {
         self.font(DesignSystem.Typography.headline())
-            .foregroundStyle(.white)
+            .foregroundStyle(DesignSystem.Colors.background)
             .padding(.vertical, 16)
             .padding(.horizontal, 24)
             .frame(maxWidth: .infinity)

@@ -15,8 +15,8 @@ struct NativeAdCard: View {
     
     var body: some View {
         #if canImport(GoogleMobileAds)
-        if let nativeAd = adManager.nativeAd as? GADNativeAd, adManager.isAdLoaded {
-            NativeAdView(nativeAd: nativeAd)
+        if let nativeAd = adManager.nativeAd as? NativeAd, adManager.isAdLoaded {
+            AdMobNativeView(nativeAd: nativeAd)
                 .frame(height: 120) // Fixed height often helps native ads
                 .styleCard()
         }
@@ -27,17 +27,15 @@ struct NativeAdCard: View {
 }
 
 #if canImport(GoogleMobileAds)
-struct NativeAdView: UIViewRepresentable {
-    let nativeAd: GADNativeAd
+struct AdMobNativeView: UIViewRepresentable {
+    let nativeAd: NativeAd
     
-    func makeUIView(context: Context) -> GADNativeAdView {
-        let nibView = Bundle.main.loadNibNamed("NativeAdView", owner: nil, options: nil)?.first as? GADNativeAdView
-        // If xib load fails (which it might if we don't have a xib), create programmatically.
+    func makeUIView(context: Context) -> NativeAdView {
         // For simplicity in SwiftUI, we'll build a custom UIView that lays out subviews matching our DesignSystem.
         return createCustomNativeAdView()
     }
     
-    func updateUIView(_ nativeAdView: GADNativeAdView, context: Context) {
+    func updateUIView(_ nativeAdView: NativeAdView, context: Context) {
         nativeAdView.nativeAd = nativeAd
         
         // Populate assets
@@ -48,11 +46,11 @@ struct NativeAdView: UIViewRepresentable {
         
         // Wire up interaction
         nativeAdView.callToActionView?.isUserInteractionEnabled = false // Let the whole view or button handle taps? 
-        // Actually, for GADNativeAdView, the view handles clicks if assets are registered.
+        // Actually, for NativeAdView, the view handles clicks if assets are registered.
     }
     
-    private func createCustomNativeAdView() -> GADNativeAdView {
-        let adView = GADNativeAdView()
+    private func createCustomNativeAdView() -> NativeAdView {
+        let adView = NativeAdView()
         
         // 1. Icon
         let iconView = UIImageView()
@@ -96,11 +94,16 @@ struct NativeAdView: UIViewRepresentable {
         // 5. CTA Button
         let ctaButton = UIButton()
         ctaButton.translatesAutoresizingMaskIntoConstraints = false
-        ctaButton.backgroundColor = UIColor(DesignSystem.Colors.textPrimary)
-        ctaButton.setTitleColor(.white, for: .normal)
-        ctaButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        ctaButton.layer.cornerRadius = 8
-        ctaButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
+        var config = UIButton.Configuration.filled()
+        config.baseBackgroundColor = UIColor(DesignSystem.Colors.textPrimary)
+        config.baseForegroundColor = .white
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = .systemFont(ofSize: 15, weight: .semibold)
+            return outgoing
+        }
+        ctaButton.configuration = config
         adView.addSubview(ctaButton)
         adView.callToActionView = ctaButton
         

@@ -1,0 +1,77 @@
+{
+  "identifier" : "E2B3C4D5",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21345678",
+      "localizations" : [
+
+      ],
+      "name" : "Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "1.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6449373160",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlock unlimited subscriptions and alerts.",
+              "displayName" : "Weekly Pass",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.subtrack.lite.premium.weekly",
+          "recurringSubscriptionPeriod" : "P1W",
+          "referenceName" : "Weekly Pass",
+          "subscriptionGroupID" : "21345678",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "19.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6449373161",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Total financial protection for a year.",
+              "displayName" : "Annual Protection",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.subtrack.lite.premium.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Annual Protection",
+          "subscriptionGroupID" : "21345678",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

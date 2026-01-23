@@ -79,61 +79,112 @@ struct PaywallView: View {
                         .padding(.horizontal, DesignSystem.Layout.spacingM)
                         
                         // 4. Pricing Options
-                        VStack(spacing: DesignSystem.Layout.spacingM) {
-                            // Annual (Best Value)
-                            Button {
-                                purchase(productID: "com.subtrack.lite.premium.yearly")
-                            } label: {
-                                PricingButtonContent(
-                                    title: "Annual Protection",
-                                    price: "$19.99 / year",
-                                    subtitle: "Just $1.66 / month. Save 50%.",
-                                    isHighlighted: true
-                                )
-                            }
-                            
-                            // Weekly (Impulse)
-                            Button {
-                                purchase(productID: "com.subtrack.lite.premium.weekly")
-                            } label: {
-                                PricingButtonContent(
-                                    title: "Weekly Pass",
-                                    price: "$1.99 / week",
-                                    subtitle: "Cancel anytime.",
-                                    isHighlighted: false
-                                )
-                            }
-                            
-                            Text("Restore Purchases")
-                                .font(DesignSystem.Typography.caption())
-                                .underline()
-                                .foregroundStyle(DesignSystem.Colors.textTertiary)
-                                .onTapGesture {
-                                    restore()
+                        if container.entitlementManager.products.isEmpty {
+                            VStack(spacing: 16) {
+                                ProgressView()
+                                    .padding()
+                                
+                                Button("Retry Loading") {
+                                    Task { await container.entitlementManager.loadProducts() }
                                 }
-                                .padding(.top, DesignSystem.Layout.spacingS)
+                                .font(DesignSystem.Typography.subheadline())
+                                .foregroundStyle(DesignSystem.Colors.tint)
+                                
+                                Text("If this persists, check Xcode:\nProduct > Scheme > Edit Scheme > Options\nEnsure StoreKit Configuration is 'Unsub'")
+                                    .font(DesignSystem.Typography.caption())
+                                    .multilineTextAlignment(.center)
+                                    .foregroundStyle(DesignSystem.Colors.textTertiary)
+                                    .padding(.top, 8)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                        } else {
+                            VStack(spacing: DesignSystem.Layout.spacingM) {
+                                ForEach(container.entitlementManager.products) { product in
+                                    Button {
+                                        purchase(product: product)
+                                    } label: {
+                                        PricingButtonContent(
+                                            title: product.displayName,
+                                            price: product.displayPrice,
+                                            subtitle: product.description,
+                                            isHighlighted: product.id.contains("yearly") // Highlight annual
+                                        )
+                                    }
+                                }
+                                
+                                Text("Restore Purchases")
+                                    .font(DesignSystem.Typography.caption())
+                                    .underline()
+                                    .foregroundStyle(DesignSystem.Colors.textTertiary)
+                                    .onTapGesture {
+                                        restore()
+                                    }
+                                    .padding(.top, DesignSystem.Layout.spacingS)
+                                
+                                // Rewarded Ad Option
+                                Button {
+                                    watchAdToEarn()
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "play.tv.fill")
+                                        Text("Watch Ad to Add +1 Slot")
+                                    }
+                                    .font(DesignSystem.Typography.subheadline())
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 16)
+                                    .background(
+                                        Capsule()
+                                            .stroke(DesignSystem.Colors.textSecondary.opacity(0.3), lineWidth: 1)
+                                    )
+                                }
+                                .padding(.top, DesignSystem.Layout.spacingM)
+                            }
+                            .padding(.horizontal, DesignSystem.Layout.spacingM)
+                            .padding(.bottom, DesignSystem.Layout.spacingXL)
                         }
-                        .padding(.horizontal, DesignSystem.Layout.spacingM)
-                        .padding(.bottom, DesignSystem.Layout.spacingXL)
+                    }
+                }
+            }
+            .onAppear {
+                AnalyticsService.shared.log(.paywallViewed)
+                // Retry loading products if they haven't loaded yet
+                if container.entitlementManager.products.isEmpty {
+                    Task {
+                        await container.entitlementManager.loadProducts()
                     }
                 }
             }
         }
     }
     
-    private func purchase(productID: String) {
-        // Stub for now. Connection to EntitlementManager comes later.
+    private func watchAdToEarn() {
+        container.adManager.showRewardedAd {
+            // Reward Verified
+            container.entitlementManager.rewardUserWithSlot()
+            dismiss() // Close paywall so they can add their sub
+        }
+    }
+    
+    private func purchase(product: Product) {
         isPurchasing = true
-        // Simulate success
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            isPurchasing = false
-            dismiss()
-            // In real app, we'd call EntitlementManager.purchase()
+        Task {
+            do {
+                try await container.entitlementManager.purchase(product)
+                isPurchasing = false
+                dismiss()
+            } catch {
+                isPurchasing = false
+                print("Purchase failed: \(error)")
+            }
         }
     }
     
     private func restore() {
-        // Stub
+        Task {
+            await container.entitlementManager.restorePurchases()
+        }
     }
 }
 
@@ -174,18 +225,18 @@ struct PricingButtonContent: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(DesignSystem.Typography.headline())
-                    .foregroundStyle(isHighlighted ? .white : DesignSystem.Colors.textPrimary)
+                    .foregroundStyle(isHighlighted ? DesignSystem.Colors.cardBackground : DesignSystem.Colors.textPrimary)
                 
                 Text(subtitle)
                     .font(DesignSystem.Typography.caption())
-                    .foregroundStyle(isHighlighted ? .white.opacity(0.8) : DesignSystem.Colors.textSecondary)
+                    .foregroundStyle(isHighlighted ? DesignSystem.Colors.cardBackground.opacity(0.8) : DesignSystem.Colors.textSecondary)
             }
             
             Spacer()
             
             Text(price)
                 .font(DesignSystem.Typography.title()) // Bold price
-                .foregroundStyle(isHighlighted ? .white : DesignSystem.Colors.textPrimary)
+                .foregroundStyle(isHighlighted ? DesignSystem.Colors.cardBackground : DesignSystem.Colors.textPrimary)
         }
         .padding(DesignSystem.Layout.spacingM)
         .background(

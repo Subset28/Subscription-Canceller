@@ -213,16 +213,19 @@ struct SettingsView: View {
 }
 
 // MARK: - Privacy View
+// MARK: - Privacy View
 struct PrivacyView: View {
     var body: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Your Privacy Matters")
-                        .font(.headline)
+                        .font(DesignSystem.Typography.headline())
+                        .foregroundStyle(DesignSystem.Colors.textPrimary)
                     
                     Text("Unsub is designed with your privacy in mind:")
-                        .font(.subheadline)
+                        .font(DesignSystem.Typography.subheadline())
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                     
                     VStack(alignment: .leading, spacing: 8) {
                         PrivacyPoint(text: "No account required")
@@ -235,7 +238,10 @@ struct PrivacyView: View {
                 }
                 .padding(.vertical, 8)
             }
+            .listRowBackground(DesignSystem.Colors.cardBackground)
         }
+        .scrollContentBackground(.hidden)
+        .background(DesignSystem.Colors.background)
         .navigationTitle("Privacy & Data")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -247,10 +253,11 @@ struct PrivacyPoint: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
-            .foregroundStyle(.green)
-            .font(.body)
+                .foregroundStyle(DesignSystem.Colors.success)
+                .font(.body)
             Text(text)
-                .font(.subheadline)
+                .font(DesignSystem.Typography.subheadline())
+                .foregroundStyle(DesignSystem.Colors.textPrimary)
         }
     }
 }

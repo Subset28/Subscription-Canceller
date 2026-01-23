@@ -57,7 +57,15 @@ class NotificationScheduler: ObservableObject {
         
         // Don't schedule if reminder date is in the past
         guard reminderDate > Date() else {
-            print("Reminder date is in the past for \(subscription.name), skipping")
+            // print("Reminder date is in the past for \(subscription.name), skipping") // Excessive logging
+            return
+        }
+        
+        // Safety: Ensure we can create valid components
+        let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: reminderDate)
+        
+        guard let _ = triggerComponents.year, let _ = triggerComponents.month, let _ = triggerComponents.day else {
+            print("Invalid date components for \(subscription.name)")
             return
         }
         
@@ -67,7 +75,6 @@ class NotificationScheduler: ObservableObject {
         content.sound = .default
         content.categoryIdentifier = "SUBSCRIPTION_REMINDER"
         
-        let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: reminderDate)
         let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
         
         let request = UNNotificationRequest(
