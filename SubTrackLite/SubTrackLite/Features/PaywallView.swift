@@ -12,6 +12,15 @@ struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var container: DependencyContainer
     
+    enum PaywallContext {
+        case general
+        case addLimit
+        case export
+        case insights
+    }
+    
+    var context: PaywallContext = .general
+    
     // State for purchasing (stubbed for now)
     @State private var isPurchasing = false
     @State private var errorMessage: String?
@@ -111,23 +120,25 @@ struct PaywallView: View {
                                     .padding(.top, DesignSystem.Layout.spacingS)
                                 
                                 // Rewarded Ad Option
-                                Button {
-                                    watchAdToEarn()
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "play.tv.fill")
-                                        Text("Watch Ad to Add +1 Slot")
+                                if shouldShowAdOption {
+                                    Button {
+                                        watchAdToEarn()
+                                    } label: {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "play.tv.fill")
+                                            Text(adButtonText)
+                                        }
+                                        .font(DesignSystem.Typography.subheadline())
+                                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                        .padding(.vertical, 8)
+                                        .padding(.horizontal, 16)
+                                        .background(
+                                            Capsule()
+                                                .stroke(DesignSystem.Colors.textSecondary.opacity(0.3), lineWidth: 1)
+                                        )
                                     }
-                                    .font(DesignSystem.Typography.subheadline())
-                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
-                                    .padding(.vertical, 8)
-                                    .padding(.horizontal, 16)
-                                    .background(
-                                        Capsule()
-                                            .stroke(DesignSystem.Colors.textSecondary.opacity(0.3), lineWidth: 1)
-                                    )
+                                    .padding(.top, DesignSystem.Layout.spacingM)
                                 }
-                                .padding(.top, DesignSystem.Layout.spacingM)
                             }
                             .padding(.horizontal, DesignSystem.Layout.spacingM)
                             .padding(.bottom, DesignSystem.Layout.spacingXL)
@@ -172,7 +183,7 @@ struct PaywallView: View {
                 }
             }
             .onAppear {
-                AnalyticsService.shared.log(.paywallViewed)
+                AnalyticsService.shared.log(.paywallViewed, params: ["context": "\(context)"])
                 // Retry loading products if they haven't loaded yet
                 if container.entitlementManager.products.isEmpty {
                     Task {
@@ -183,11 +194,37 @@ struct PaywallView: View {
         }
     }
     
+    private var shouldShowAdOption: Bool {
+        // Show for add limit, export, or insights.
+        // For general, maybe hidden or default to +1 slot? Let's hide for general to push premium.
+        switch context {
+        case .addLimit, .export, .insights: return true
+        default: return false
+        }
+    }
+    
+    private var adButtonText: String {
+        switch context {
+        case .addLimit: return "Watch Ad to Add +1 Slot"
+        case .export: return "Watch Ad to Unlock Export"
+        case .insights: return "Watch Ad to View Insights"
+        default: return ""
+        }
+    }
+    
     private func watchAdToEarn() {
         container.adManager.showRewardedAd {
-            // Reward Verified
-            container.entitlementManager.rewardUserWithSlot()
-            dismiss() // Close paywall so they can add their sub
+            switch context {
+            case .addLimit:
+                container.entitlementManager.rewardUserWithSlot()
+            case .export:
+                container.entitlementManager.rewardUserWithExport()
+            case .insights:
+                container.entitlementManager.rewardUserWithInsights()
+            default:
+                break
+            }
+            dismiss() // Close paywall
         }
     }
     

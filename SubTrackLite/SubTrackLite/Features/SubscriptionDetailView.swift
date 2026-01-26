@@ -171,8 +171,10 @@ struct SubscriptionDetailView: View {
     }
     
     private func deleteSubscription() {
-        container.notificationScheduler.cancelNotification(for: subscription)
-        container.spotlightService.deindex(subscription)
+        // Create DTO for services
+        let dto = SubscriptionDTO(from: subscription)
+        container.notificationScheduler.cancelNotification(for: dto)
+        container.spotlightService.deindex(dto)
         modelContext.delete(subscription)
         try? modelContext.save()
         dismiss()

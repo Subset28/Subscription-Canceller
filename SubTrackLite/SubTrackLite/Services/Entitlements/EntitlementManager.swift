@@ -147,10 +147,28 @@ class EntitlementManager: ObservableObject {
         return currentCount < (3 + earnedExtraSlots)
     }
     
+    // Ad-based Temporary Unlocks
+    @Published var isExportUnlockedOneTime = false
+    @Published var isInsightsUnlockedSession = false
+    
     // Rewarded Ad integration
     func rewardUserWithSlot() {
         earnedExtraSlots += 1
         AnalyticsService.shared.log(.nativeAdImpression, params: ["type": "rewarded_slot_earned"])
+    }
+    
+    func rewardUserWithExport() {
+        isExportUnlockedOneTime = true
+        AnalyticsService.shared.log(.nativeAdImpression, params: ["type": "rewarded_export_earned"])
+    }
+    
+    func rewardUserWithInsights() {
+        isInsightsUnlockedSession = true
+        AnalyticsService.shared.log(.nativeAdImpression, params: ["type": "rewarded_insights_earned"])
+    }
+    
+    func consumeExportUnlock() {
+        isExportUnlockedOneTime = false
     }
     
     // Notifications are Premium Only (Aggressive Pivot)
@@ -164,8 +182,8 @@ class EntitlementManager: ObservableObject {
     
     // GATED: The "Pro" stuff
     var isCategoryUnlocked: Bool { true } // Ungated: Core Organization feature
-    var canExportData: Bool { hasPremiumAccess } // Data sovereignty
-    var isChartsUnlocked: Bool { hasPremiumAccess } // Spending DNA
+    var canExportData: Bool { hasPremiumAccess || isExportUnlockedOneTime } // Data sovereignty
+    var isChartsUnlocked: Bool { hasPremiumAccess || isInsightsUnlockedSession } // Spending DNA
     var isConciergeUnlocked: Bool { hasPremiumAccess } // Legal Email Generator
     var isSmartRemindersUnlocked: Bool { hasPremiumAccess } // > 3 day reminders
 }

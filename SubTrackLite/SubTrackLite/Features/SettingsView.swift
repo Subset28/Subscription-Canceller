@@ -134,7 +134,7 @@ struct SettingsView: View {
                 }
             }
             .sheet(isPresented: $showingPaywall) {
-                PaywallView()
+                PaywallView(context: .export)
             }
             .sheet(isPresented: $showingDebugView) {
                 NotificationDebugView()
@@ -183,7 +183,9 @@ struct SettingsView: View {
             if let importedSubscriptions = container.csvExportService.importFromCSV(url: url) {
                 for subscription in importedSubscriptions {
                     modelContext.insert(subscription)
-                    container.notificationScheduler.scheduleNotification(for: subscription)
+                    // Create DTO for services
+                    let dto = SubscriptionDTO(from: subscription)
+                    container.notificationScheduler.scheduleNotification(for: dto)
                 }
                 try? modelContext.save()
             }

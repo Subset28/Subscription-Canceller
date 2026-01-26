@@ -18,6 +18,7 @@ struct SubscriptionListView: View {
     @State private var filterOption: FilterOption = .all
     @State private var showingAddSubscription = false
     @State private var showingPaywall = false
+    @State private var paywallContext: PaywallView.PaywallContext = .general
     @State private var showingSettings = false
     
     // Computed filtering
@@ -83,6 +84,7 @@ struct SubscriptionListView: View {
                             // Locked -> Paywall
                             let generator = UINotificationFeedbackGenerator()
                             generator.notificationOccurred(.warning)
+                            paywallContext = .insights
                             showingPaywall = true
                         }
                     } label: {
@@ -115,6 +117,7 @@ struct SubscriptionListView: View {
                         if !container.entitlementManager.hasPremiumAccess {
                             Divider()
                             Button {
+                                paywallContext = .general
                                 showingPaywall = true
                             } label: {
                                 Label("Protect Ledger", systemImage: "shield.fill")
@@ -134,6 +137,7 @@ struct SubscriptionListView: View {
                             showingAddSubscription = true
                         } else {
                             // Hit the limit -> Upsell
+                            paywallContext = .addLimit
                             showingPaywall = true
                         }
                     } label: {
@@ -151,10 +155,7 @@ struct SubscriptionListView: View {
                 SettingsView()
             }
             .sheet(isPresented: $showingPaywall) {
-                PaywallView()
-            }
-            .sheet(isPresented: $showingPaywall) {
-                PaywallView()
+                PaywallView(context: paywallContext)
             }
             .navigationDestination(isPresented: $showingInsights) {
                 InsightsView()
