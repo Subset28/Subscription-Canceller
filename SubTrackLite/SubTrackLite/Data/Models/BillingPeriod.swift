@@ -82,7 +82,7 @@ public enum BillingPeriod: Codable, Sendable, Hashable {
         case .yearly:
             return Decimal(1) / Decimal(12) // ~0.083
         case .custom(let days):
-            return Decimal(30) / Decimal(days)
+            return days > 0 ? Decimal(30) / Decimal(days) : 0
         }
     }
     // Manual Codable implementation to resolve Swift 6 / SwiftData isolation issues
@@ -91,55 +91,44 @@ public enum BillingPeriod: Codable, Sendable, Hashable {
     }
 }
 
+// Simplified Codable implementation to ensure safe SwiftData storage (Stored as String)
 extension BillingPeriod {
     nonisolated public init(from decoder: Decoder) throws {
-        do {
-            // Attempt to decode as new keyed container (Swift 6 compliant format)
-            if let container = try? decoder.container(keyedBy: CodingKeys.self) {
-                let type = try container.decodeIfPresent(String.self, forKey: .type)
-                switch type {
-                case "weekly": self = .weekly
-                case "biweekly": self = .biweekly
-                case "monthly": self = .monthly
-                case "quarterly": self = .quarterly
-                case "semiannual": self = .semiannual
-                case "yearly": self = .yearly
-                case "custom":
-                    let days = try container.decode(Int.self, forKey: .days)
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        
+        switch rawValue {
+        case "weekly": self = .weekly
+        case "biweekly": self = .biweekly
+        case "monthly": self = .monthly
+        case "quarterly": self = .quarterly
+        case "semiannual": self = .semiannual
+        case "yearly": self = .yearly
+        default:
+            if rawValue.hasPrefix("custom:") {
+                let daysString = rawValue.dropFirst(7) // remove "custom:"
+                if let days = Int(daysString) {
                     self = .custom(days: days)
-                default:
-                    self = .monthly
+                    return
                 }
-                return
             }
-            
-            // Fallback: Try decoding as single value (Legacy format)
-            let container = try decoder.singleValueContainer()
-            if let stringVal = try? container.decode(String.self) {
-                 print("BillingPeriod: Recovering from legacy format (String): \(stringVal)")
-                 self = .monthly
-            } else {
-                 print("BillingPeriod: Unknown legacy format. Defaulting to .monthly")
-                 self = .monthly
-            }
-        } catch {
-            print("BillingPeriod: Decoding failed (Corruption?): \(error). Defaulting to .monthly")
+            // Fallback for legacy or unknown
+            print("BillingPeriod: Unknown raw value '\(rawValue)'. Defaulting to .monthly")
             self = .monthly
         }
     }
     
     nonisolated public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
+        var container = encoder.singleValueContainer()
         switch self {
-        case .weekly: try container.encode("weekly", forKey: .type)
-        case .biweekly: try container.encode("biweekly", forKey: .type)
-        case .monthly: try container.encode("monthly", forKey: .type)
-        case .quarterly: try container.encode("quarterly", forKey: .type)
-        case .semiannual: try container.encode("semiannual", forKey: .type)
-        case .yearly: try container.encode("yearly", forKey: .type)
+        case .weekly: try container.encode("weekly")
+        case .biweekly: try container.encode("biweekly")
+        case .monthly: try container.encode("monthly")
+        case .quarterly: try container.encode("quarterly")
+        case .semiannual: try container.encode("semiannual")
+        case .yearly: try container.encode("yearly")
         case .custom(let days):
-            try container.encode("custom", forKey: .type)
-            try container.encode(days, forKey: .days)
+            try container.encode("custom:\(days)")
         }
     }
 }

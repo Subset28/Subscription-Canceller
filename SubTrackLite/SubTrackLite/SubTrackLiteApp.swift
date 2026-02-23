@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import AppTrackingTransparency
 
 @main
 struct SubTrackLiteApp: App {
@@ -22,7 +23,7 @@ struct SubTrackLiteApp: App {
                     .environmentObject(container)
                     .modelContainer(container.modelContainer)
                     .onAppear {
-                        container.notificationScheduler.requestAuthorization()
+                        requestPermissions()
                     }
                 
                 if isSplashActive {
@@ -33,6 +34,22 @@ struct SubTrackLiteApp: App {
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .active {
                 container.notificationScheduler.refreshScheduledNotifications()
+            }
+        }
+    }
+    
+    private func requestPermissions() {
+        container.notificationScheduler.requestAuthorization()
+        
+        // Request App Tracking Transparency after a short delay
+        // to ensure the app is fully active and not covered by any initial splash/onboarding
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            ATTrackingManager.requestTrackingAuthorization { status in
+                // Start loading ads after we have a tracking status
+                Task { @MainActor in
+                    container.adManager.loadAd()
+                    container.adManager.loadRewardedAd()
+                }
             }
         }
     }

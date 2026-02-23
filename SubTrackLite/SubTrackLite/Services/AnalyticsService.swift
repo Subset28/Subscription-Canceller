@@ -23,8 +23,10 @@ class AnalyticsService {
     }
     
     func log(_ event: Event, params: [String: Any] = [:]) {
+        #if DEBUG
         // 1. Console Logging (Debug)
         print("📊 [Analytics] \(event.rawValue): \(params)")
+        #endif
         
         // 2. Future: Send to backend
         // Analytics.logEvent(event.rawValue, parameters: params)

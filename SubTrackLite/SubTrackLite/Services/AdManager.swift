@@ -33,8 +33,6 @@ class AdManager: NSObject, ObservableObject {
         // Production: No test devices
         // MobileAds.shared.requestConfiguration.testDeviceIdentifiers = []
         #endif
-        loadAd()
-        loadRewardedAd()
     }
     
     func loadAd() {

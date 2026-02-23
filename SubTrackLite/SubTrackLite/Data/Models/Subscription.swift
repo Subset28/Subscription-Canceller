@@ -14,23 +14,71 @@ final class Subscription {
     var name: String
     var price: Decimal
     var currencyCode: String
-    var billingPeriod: BillingPeriod
+    
+    // Flattened BillingPeriod (Deep Fix for SwiftData)
+    var billingPeriodType: String = "monthly"
+    var billingPeriodCustomDays: Int? = nil
+    
     var nextRenewalDate: Date
     var reminderLeadTimeDays: Int
     var remindersEnabled: Bool
     var isAppleSubscription: Bool
     var cancelURL: String?
-    var calendarEventID: String? // New for Calendar Sync
+    var calendarEventID: String?
     var notes: String?
     var createdAt: Date
     var updatedAt: Date
     
-    // Organization (New)
+    // Organization
     var categoryRaw: String = "Personal"
     
     var category: SubscriptionCategory {
         get { SubscriptionCategory(rawValue: categoryRaw) ?? .personal }
         set { categoryRaw = newValue.rawValue }
+    }
+    
+    // Computed BillingPeriod
+    @Transient // Ensure SwiftData ignores this for persistence
+    var billingPeriod: BillingPeriod {
+        get {
+            switch billingPeriodType {
+            case "weekly": return .weekly
+            case "biweekly": return .biweekly
+            case "monthly": return .monthly
+            case "quarterly": return .quarterly
+            case "semiannual": return .semiannual
+            case "yearly": return .yearly
+            case "custom":
+                return .custom(days: billingPeriodCustomDays ?? 30)
+            default:
+                return .monthly
+            }
+        }
+        set {
+            switch newValue {
+            case .weekly: 
+                billingPeriodType = "weekly"
+                billingPeriodCustomDays = nil
+            case .biweekly: 
+                billingPeriodType = "biweekly"
+                billingPeriodCustomDays = nil
+            case .monthly: 
+                billingPeriodType = "monthly"
+                billingPeriodCustomDays = nil
+            case .quarterly: 
+                billingPeriodType = "quarterly"
+                billingPeriodCustomDays = nil
+            case .semiannual: 
+                billingPeriodType = "semiannual"
+                billingPeriodCustomDays = nil
+            case .yearly: 
+                billingPeriodType = "yearly"
+                billingPeriodCustomDays = nil
+            case .custom(let days):
+                billingPeriodType = "custom"
+                billingPeriodCustomDays = days
+            }
+        }
     }
     
     init(
@@ -52,7 +100,6 @@ final class Subscription {
         self.name = name
         self.price = price
         self.currencyCode = currencyCode
-        self.billingPeriod = billingPeriod
         self.nextRenewalDate = nextRenewalDate
         self.categoryRaw = category.rawValue
         self.reminderLeadTimeDays = reminderLeadTimeDays
@@ -63,6 +110,19 @@ final class Subscription {
         self.notes = notes
         self.createdAt = Date()
         self.updatedAt = Date()
+        
+        // Init raw values for Billing Period
+        switch billingPeriod {
+        case .weekly: self.billingPeriodType = "weekly"
+        case .biweekly: self.billingPeriodType = "biweekly"
+        case .monthly: self.billingPeriodType = "monthly"
+        case .quarterly: self.billingPeriodType = "quarterly"
+        case .semiannual: self.billingPeriodType = "semiannual"
+        case .yearly: self.billingPeriodType = "yearly"
+        case .custom(let days):
+            self.billingPeriodType = "custom"
+            self.billingPeriodCustomDays = days
+        }
     }
     
     // MARK: - Computed Properties
