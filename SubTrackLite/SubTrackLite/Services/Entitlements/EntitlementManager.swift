@@ -20,11 +20,12 @@ class EntitlementManager: ObservableObject {
     @Published var productLoadError: String?
     
     // Product IDs must match App Store Connect / Unsub.storekit
-    // Product IDs must match App Store Connect / Unsub.storekit
-    // User Pivot: Weekly removed. Monthly & Yearly only.
+    // User Pivot: Weekly and Lifetime added for profit optimization.
     private let productIDs = [
+        "com.subtrack.lite.premium.weekly",
         "com.subtrack.lite.premium.monthly",
-        "com.subtrack.lite.premium.yearly"
+        "com.subtrack.lite.premium.yearly",
+        "com.subtrack.lite.premium.lifetime"
     ]
     
     private var updates: Task<Void, Never>? = nil

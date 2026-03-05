@@ -55,7 +55,7 @@ struct PaywallView: View {
                         
                         // 2. Emotional Hero
                         VStack(spacing: DesignSystem.Layout.spacingM) {
-                            Image(systemName: "shield.check.fill")
+                            Image(systemName: "checkmark.shield.fill")
                                 .font(.system(size: 64))
                                 .foregroundStyle(DesignSystem.Colors.textPrimary)
                                 .shadow(color: DesignSystem.Colors.textPrimary.opacity(0.2), radius: 20, x: 0, y: 10)
